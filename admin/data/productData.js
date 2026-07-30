@@ -85,12 +85,24 @@ async function getReviewById(reviewId) {
 }
 
 async function updateReviewEmbedding(reviewId, embedding) {
-  // TODO
+  const vectorString = `[${embedding.join(',')}]`;
+  await pool.execute(
+    `UPDATE reviews SET embedding = VEC_FromText('${vectorString}') WHERE id = ?`,
+    [reviewId]
+  );
 }
 
 async function searchReviewEmbeddings(productId, queryEmbedding, limit = 10) {
-  // TODO
-  return []
+  const vectorString = `[${queryEmbedding.join(',')}]`;
+  const [rows] = await pool.execute(
+    `SELECT id, title, review_text, rating, VEC_DISTANCE(embedding, VEC_FromText('${vectorString}')) as distance
+     FROM reviews
+     WHERE product_id = ? AND VEC_DISTANCE(embedding, VEC_FromText(?)) > 0
+     ORDER BY distance ASC
+     LIMIT ?`,
+    [productId, ZERO_VECTOR_TEXT, limit]
+  );
+  return rows;
 }
 
 module.exports = {
