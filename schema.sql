@@ -37,6 +37,10 @@ CREATE TABLE product_tags (
 );
 
 -- Reviews table
+-- NOTE: embedding is nullable, and therefore has no VECTOR INDEX (the
+-- database requires all indexed vector columns to be NOT NULL). Sample
+-- reviews are inserted WITHOUT embeddings and get their embeddings later
+-- via the Process Reviews button.
 CREATE TABLE reviews (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   product_id INT UNSIGNED NOT NULL,
@@ -44,10 +48,9 @@ CREATE TABLE reviews (
   review_text TEXT NOT NULL,
   review_date DATE NOT NULL,
   rating TINYINT UNSIGNED NOT NULL,
-  embedding VECTOR(3072) NOT NULL COMMENT 'Vector embeddings from Gemini',
+  embedding VECTOR(3072) COMMENT 'Vector embeddings from Gemini',
   CONSTRAINT chk_rating_range CHECK (rating BETWEEN 1 AND 5),
-  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-  VECTOR INDEX (embedding)
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
 -- Users table
@@ -62,7 +65,7 @@ CREATE TABLE users (
   created_at DATETIME DEFAULT NOW()
 );
 
--- Chat sessions table
+-- Chat sessions table: each row is one conversation thread
 CREATE TABLE chat_sessions (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   admin_id INT UNSIGNED NOT NULL,
@@ -71,7 +74,7 @@ CREATE TABLE chat_sessions (
   FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Chat messages table
+-- Chat messages table: each row is one message within a session
 CREATE TABLE chat_messages (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   session_id INT UNSIGNED NOT NULL,
@@ -138,6 +141,8 @@ CREATE TABLE documents (
 );
 
 -- Document Chunks table (one-to-many with documents)
+-- NOTE: embedding is NOT NULL — unlike reviews, no rows exist before
+-- chunking/embedding runs, so this can be enforced from the start.
 CREATE TABLE document_chunks (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   document_id INT UNSIGNED NOT NULL,
