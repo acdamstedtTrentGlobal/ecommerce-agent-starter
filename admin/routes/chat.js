@@ -72,7 +72,7 @@ router.post('/sessions/:id/delete', ensureAdmin, async (req, res) => {
 
 router.post('/api', ensureAdmin, express.json(), async (req, res) => {
   try {
-    const { message, sessionId, thinking } = req.body || {};
+    const { message, sessionId } = req.body || {};
     const text = (message || '').toString().trim();
     if (!text) return res.json({ reply: 'Please type something.' });
     if (!sessionId) return res.status(400).json({ reply: 'No session selected.' });
