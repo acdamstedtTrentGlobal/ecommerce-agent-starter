@@ -72,18 +72,18 @@ router.post('/sessions/:id/delete', ensureAdmin, async (req, res) => {
 
 router.post('/api', ensureAdmin, express.json(), async (req, res) => {
   try {
-    const { message, sessionId, thinking } = req.body || {};
+    const { message, sessionId } = req.body || {};
     const text = (message || '').toString().trim();
     if (!text) return res.json({ reply: 'Please type something.' });
     if (!sessionId) return res.status(400).json({ reply: 'No session selected.' });
 
     console.log("Running agent");
-    const { reply, chart, plan } = await runAgent(
+    const { reply, chart } = await runAgent(
       { input: text },
       { configurable: { sessionId } },
     );
 
-    res.json({ reply, chart, plan });
+    res.json({ reply, chart });
   } catch (error) {
     console.error('Chat error:', error);
     res.status(500).json({ reply: 'Sorry, something went wrong.' });

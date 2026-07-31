@@ -1,5 +1,5 @@
 // migrating to LangChain v1 agent
-const { createAgent, todoListMiddleware } = require('langchain');
+const { createAgent } = require('langchain');
 const { ChatGoogle } = require('@langchain/google/node');
 
 const {
@@ -15,11 +15,6 @@ const {
   searchProductReviewsTool,
   getReviewSentimentPolesTool
 } = require('./admin/tools/reviewTools');
-const {
-  getProductDetailsTool,
-  createRestockOrderTool,
-  getCurrentDateTimeTool
-} = require('./admin/tools/planningTools');
 
 const model = new ChatGoogle({
   model: 'gemini-3.1-flash-lite',
@@ -38,9 +33,6 @@ const tools = [
   getProductReviewsTool,
   searchProductReviewsTool,
   getReviewSentimentPolesTool,
-  getProductDetailsTool,
-  createRestockOrderTool,
-  getCurrentDateTimeTool
 ];
 
 const modelWithTools = new ChatGoogle({
@@ -59,7 +51,6 @@ const agent = createAgent({
   model,
   tools,
   prompt: prompt,
-  middleware: [todoListMiddleware()],
 });
 
 module.exports = { model, modelWithTools, agent };
