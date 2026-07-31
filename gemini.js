@@ -2,8 +2,6 @@
 const { createAgent, todoListMiddleware } = require('langchain');
 const { ChatGoogle } = require('@langchain/google/node');
 
-const { thoughtMiddleware} = require('./admin/modules/thoughts.js')
-
 const {
   getCompletedOrdersTool,
   getCompletedOrdersForProductTool,
@@ -64,12 +62,4 @@ const agent = createAgent({
   middleware: [todoListMiddleware()],
 });
 
-const thinkingAgent = createAgent({
-  model,
-  tools,
-  prompt: prompt,
-  middleware: [todoListMiddleware(), thoughtMiddleware],
-});
-
-
-module.exports = { model, modelWithTools, agent, thinkingAgent };
+module.exports = { model, modelWithTools, agent };

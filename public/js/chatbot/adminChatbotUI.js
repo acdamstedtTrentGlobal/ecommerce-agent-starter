@@ -178,7 +178,7 @@
         this.handleMessage(chatInstance, msg);
       });
 
-      this._createThinkingToggle();
+      // this._createThinkingToggle();
       this._seedHistory();
       this._bindSessionControls();
     }

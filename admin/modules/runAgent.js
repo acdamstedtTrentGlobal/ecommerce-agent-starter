@@ -2,22 +2,18 @@ const { HumanMessage } = require('@langchain/core/messages');
 const { agent, thinkingAgent } = require('../../gemini');
 const { MariaDBChatHistory } = require('./MariaDBHistory');
 const { takeChartConfig } = require('../tools/chartTools');
-const { takeThoughts } = require('./thoughts');
 const { extractText, extractPlan, isRecursionLimitError } = require('./agentHelpers');
 
-async function runAgent(input, config, thinking = false) {
+async function runAgent(input, config) {
   const { sessionId } = config.configurable;
   const history = new MariaDBChatHistory(sessionId);
   const pastMessages = await history.getMessages();
   let response;
 
-  // switch between thinking agent or non-thinking agent
-  const activeAgent = thinking ? thinkingAgent : agent;
-
   try {
     // The agent runs the full tool-calling loop internally.
     // 25 steps (the default) is not enough once planning is involved.
-    response = await activeAgent.invoke(
+    response = await agent.invoke(
       { messages: [...pastMessages, new HumanMessage(input.input)] },
       { ...config, recursionLimit: 50 }
     );
@@ -46,13 +42,10 @@ async function runAgent(input, config, thinking = false) {
     const plan = extractPlan(response.todos);
     console.log("plan =", plan);
 
-    // Thoughts are display-only: drain them from the store, but do NOT save them to history
-    const thoughts = takeThoughts(sessionId);
-
     await history.addUserMessage(input.input);
     await history.addAIChatMessage(reply, chart);
 
-    return { reply, chart, plan, thoughts };
+    return { reply, chart, plan };
   }
 
   return await buildAgentResponse();
