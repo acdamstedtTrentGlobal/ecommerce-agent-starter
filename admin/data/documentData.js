@@ -20,52 +20,18 @@ async function deleteChunksByDocumentId(documentId) {
 }
 
 async function insertChunk(documentId, chunkText, chunkIndex, embedding) {
-  const vectorString = `[${embedding.join(',')}]`;
-  await pool.execute(
-    `INSERT INTO document_chunks (document_id, chunk_text, chunk_index, embedding) VALUES (?, ?, ?, VEC_FromText('${vectorString}'))`,
-    [documentId, chunkText, chunkIndex]
-  );
+  // TODO
 }
 
 async function searchChunkEmbeddings(documentId, queryEmbedding, limit = 5) {
-  const vectorString = `[${queryEmbedding.join(',')}]`;
-  const [rows] = await pool.execute(
-    `SELECT chunk_text, VEC_DISTANCE(embedding, VEC_FromText('${vectorString}')) as distance
-     FROM document_chunks
-     WHERE document_id = ?
-     ORDER BY distance ASC
-     LIMIT ?`,
-    [documentId, limit]
-  );
-  return rows;
+  // TODO
 }
 
 async function searchDistinctProductEmbeddings(
   queryEmbedding,
   limit = 5
 ) {
-  const vectorString = `[${queryEmbedding.join(',')}]`;
-
-  const [rows] = await pool.execute(
-    `SELECT p.id AS product_id,
-            p.name AS product_name,
-            p.brand,
-            MIN(
-              VEC_DISTANCE(
-                dc.embedding,
-                VEC_FromText('${vectorString}')
-              )
-            ) AS distance
-     FROM document_chunks dc
-     JOIN documents d ON dc.document_id = d.id
-     JOIN products p ON d.product_id = p.id
-     GROUP BY p.id, p.name, p.brand
-     ORDER BY distance ASC
-     LIMIT ?`,
-    [limit]
-  );
-
-  return rows;
+  // TODO
 }
 
 

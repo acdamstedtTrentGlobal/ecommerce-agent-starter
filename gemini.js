@@ -9,12 +9,6 @@ const {
   getLowStockTool
 } = require('./admin/tools/salesTools.js');
 const { generateApexChartTool } = require('./admin/tools/chartTools');
-const { searchProductBySemanticTool, answerProductQuestionTool } = require('./admin/tools/ragTools');
-const {
-  getProductReviewsTool,
-  searchProductReviewsTool,
-  getReviewSentimentPolesTool
-} = require('./admin/tools/reviewTools');
 
 const model = new ChatGoogle({
   model: 'gemini-3.1-flash-lite',
@@ -28,11 +22,6 @@ const tools = [
   tabulateSalesTool,
   getLowStockTool,
   generateApexChartTool,
-  searchProductBySemanticTool,
-  answerProductQuestionTool,
-  getProductReviewsTool,
-  searchProductReviewsTool,
-  getReviewSentimentPolesTool,
 ];
 
 const modelWithTools = new ChatGoogle({
