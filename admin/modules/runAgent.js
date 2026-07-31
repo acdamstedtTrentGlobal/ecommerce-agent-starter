@@ -10,10 +10,6 @@ const { Command } = require('@langchain/langgraph');
 const { setPendingApproval, takePendingApproval, approvalReply } = require('./approval');
 const { randomUUID } = require('crypto');
 
-
-
-
-
 // Shared by runAgent and resumeAgent: format the final payload and save the
 // exchange to the chat history. Note this is the ONLY place we save - a run
 // that is still waiting for approval has not touched the history at all.
