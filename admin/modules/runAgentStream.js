@@ -1,13 +1,10 @@
 // admin/modules/runAgentStream.js
 const { HumanMessage } = require('@langchain/core/messages');
-const { Command } = require('@langchain/langgraph');
-const { randomUUID } = require('crypto');
 const { agent, thinkingAgent } = require('../../gemini');
 const { MariaDBChatHistory } = require('./MariaDBHistory');
 const { extractText, extractPlan, isRecursionLimitError } = require('./agentHelpers');
 const { takeChartConfig } = require('../tools/chartTools');
 const { takeThoughts, peekThoughts } = require('./thoughts');
-const { setPendingApproval, takePendingApproval, approvalReply } = require('./approval');
 
 
 // Like extractText, but skips thought blocks: the reply should be the
@@ -114,15 +111,6 @@ async function executeAgentStream({ activeAgent, streamInput, runConfig, session
     throw error;
   }
 
-  // check if there are any interruption to handle
-  const threadId = runConfig.configurable.thread_id;
-  const state = await activeAgent.getState({ configurable: { thread_id: threadId } });
-  const interrupts = (state.tasks || []).flatMap(task => task.interrupts || []);
-  if (interrupts.length > 0) {
-    setPendingApproval(sessionId, { threadId, thinking, input: userInput });
-    return { reply: approvalReply(interrupts[0].value), chart: null, plan: null, replyStreamed: false };
-  }
-
   const chart = takeChartConfig(sessionId);
   const plan = todos ? extractPlan(todos) : null;
   takeThoughts(sessionId);
@@ -139,13 +127,7 @@ async function runAgentStream(input, config, thinking = false, onEvent) {
   const pastMessages = await history.getMessages();
 
   const activeAgent = thinking ? thinkingAgent : agent;
-  const threadId = config.configurable?.thread_id || randomUUID();
-  const runConfig = {
-    ...config,
-    configurable: { ...config.configurable, thread_id: threadId },
-    recursionLimit: 50,
-    version: 'v2'
-  };
+  const runConfig = { ...config, recursionLimit: 50, version: 'v2' };
 
   const streamInput = { messages: [...pastMessages, new HumanMessage(input.input)] };
 
@@ -160,34 +142,4 @@ async function runAgentStream(input, config, thinking = false, onEvent) {
   }, onEvent);
 }
 
-async function resumeAgentStream(sessionId, decisions, onEvent) {
-  const pending = takePendingApproval(sessionId);
-  if (!pending) {
-    return { reply: 'Nothing is waiting for approval.', chart: null, plan: null, replyStreamed: false };
-  }
-
-  const { threadId, thinking, input: userInput } = pending;
-  const history = new MariaDBChatHistory(sessionId);
-  const activeAgent = thinking ? thinkingAgent : agent;
-  const runConfig = {
-    configurable: { sessionId, thread_id: threadId },
-    recursionLimit: 50,
-    version: 'v2'
-  };
-
-  const streamInput = new Command({
-    resume: { decisions: Array.isArray(decisions) ? decisions : [decisions] }
-  });
-
-  return executeAgentStream({
-    activeAgent,
-    streamInput,
-    runConfig,
-    sessionId,
-    userInput,
-    thinking,
-    history
-  }, onEvent);
-}
-
-module.exports = { runAgentStream, resumeAgentStream };
+module.exports = { runAgentStream };

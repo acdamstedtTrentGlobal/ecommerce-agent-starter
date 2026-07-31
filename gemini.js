@@ -3,10 +3,6 @@ const { createAgent, todoListMiddleware } = require('langchain');
 const { ChatGoogle } = require('@langchain/google/node');
 
 const { thoughtMiddleware} = require('./admin/modules/thoughts.js')
-const { approvalMiddleware } = require('./admin/modules/approval.js')
-
-const { MemorySaver } = require('@langchain/langgraph');
-const checkpointer = new MemorySaver();
 
 const {
   getCompletedOrdersTool,
@@ -59,24 +55,20 @@ const prompt = `You are a helpful admin assistant for an ecommerce store. Format
   The chart will be rendered automatically by the frontend. 
   Do not describe the chart config JSON in your reply.
   For any request that involves two or more distinct actions, you MUST call write_todos to create a plan before calling any other tool — even if you already know what you will do.
-  If the admin rejects a plan or action without giving specific feedback, ask the admin politely what changes they would like to make or how they would prefer you to proceed. Do NOT execute any tools until they clarify.
-  If the admin provides specific feedback when rejecting, create a revised plan using write_todos that incorporates their feedback.
   `;
 
 const agent = createAgent({
   model,
   tools,
   prompt: prompt,
-  middleware: [todoListMiddleware(), approvalMiddleware],
-  checkpointer
+  middleware: [todoListMiddleware()],
 });
 
 const thinkingAgent = createAgent({
   model,
   tools,
   prompt: prompt,
-  middleware: [todoListMiddleware(), approvalMiddleware, thoughtMiddleware],
-  checkpointer
+  middleware: [todoListMiddleware(), thoughtMiddleware],
 });
 
 

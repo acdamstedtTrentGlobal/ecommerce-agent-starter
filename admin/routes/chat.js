@@ -5,9 +5,7 @@ const router = express.Router();
 const ensureAdmin = require('../middlewares/ensureAdmin');
 const { MariaDBChatHistory } = require('../modules/MariaDBHistory');
 const { runAgent } = require('../modules/runAgent');
-const { runAgentStream, resumeAgentStream } = require('../modules/runAgentStream');
-const { hasPendingApproval, parseDecision } = require('../modules/approval');
-const { resumeAgent } = require('../modules/runAgent');
+const { runAgentStream } = require('../modules/runAgentStream');
 
 
 router.get('/', ensureAdmin, async (req, res) => {
@@ -80,15 +78,6 @@ router.post('/api', ensureAdmin, express.json(), async (req, res) => {
     if (!text) return res.json({ reply: 'Please type something.' });
     if (!sessionId) return res.status(400).json({ reply: 'No session selected.' });
 
-    if (hasPendingApproval(sessionId)) {
-      const decisions = parseDecision(text);
-      if (!decisions) {
-        return res.json({ reply: 'Please reply *yes* to approve or *no* to reject.' });
-      }
-      const result = await resumeAgent(sessionId, decisions);
-      return res.json(result);
-    }
-
     console.log("Running agent");
     const { reply, chart, plan, thoughts } = await runAgent(
       { input: text },
@@ -103,80 +92,6 @@ router.post('/api', ensureAdmin, express.json(), async (req, res) => {
   }
 });
 
-// Base class for Server-Sent Events (SSE) responses
-class SSEStream {
-  constructor(res) {
-    this.res = res;
-  }
-
-  // Set standard SSE response headers and flush them
-  init() {
-    this.res.setHeader('Content-Type', 'text/event-stream');
-    this.res.setHeader('Cache-Control', 'no-cache');
-    this.res.setHeader('Connection', 'keep-alive');
-    this.res.flushHeaders();
-  }
-
-  // Format and write an SSE frame
-  send(event, data) {
-    this.res.write(`event: ${event}\n`);
-    this.res.write(`data: ${JSON.stringify(data)}\n\n`);
-  }
-
-  // Abstract method to be overridden by subclasses
-  async stream() {
-    throw new Error('Subclasses must implement stream()');
-  }
-
-  // Execute full SSE stream lifecycle: init -> stream -> done event -> error catch -> close socket
-  async run() {
-    this.init();
-    try {
-      const result = await this.stream();
-      this.send('done', result);
-    } catch (error) {
-      console.error('Chat stream error:', error);
-      this.send('error', { reply: 'Sorry, something went wrong.' });
-    } finally {
-      this.res.end();
-    }
-  }
-}
-
-// Subclass for initial agent streaming runs
-class RunAgentStreamResponse extends SSEStream {
-  constructor(res, { text, sessionId, thinking }) {
-    super(res);
-    this.text = text;
-    this.sessionId = sessionId;
-    this.thinking = thinking;
-  }
-
-  async stream() {
-    return runAgentStream(
-      { input: this.text },
-      { configurable: { sessionId: this.sessionId } },
-      this.thinking,
-      (event, data) => this.send(event, data)
-    );
-  }
-}
-
-// Subclass for resuming agent runs from pending approval
-class ResumeAgentStreamResponse extends SSEStream {
-  constructor(res, { sessionId, decisions }) {
-    super(res);
-    this.sessionId = sessionId;
-    this.decisions = decisions;
-  }
-
-  async stream() {
-    return resumeAgentStream(this.sessionId, this.decisions, (event, data) =>
-      this.send(event, data)
-    );
-  }
-}
-
 // Streaming version of POST /api: same request body, but the response is a
 // Server-Sent Events stream instead of one JSON object
 router.post('/api/stream', ensureAdmin, express.json(), async (req, res) => {
@@ -187,17 +102,32 @@ router.post('/api/stream', ensureAdmin, express.json(), async (req, res) => {
   if (!text) return res.json({ reply: 'Please type something.' });
   if (!sessionId) return res.status(400).json({ reply: 'No session selected.' });
 
-  // Check if there is anything to resume
-  if (hasPendingApproval(sessionId)) {
-    const decisions = parseDecision(text);
-    if (!decisions) {
-      return res.json({ reply: 'Please reply *yes* to approve or *no* to reject.' });
-    }
-    return new ResumeAgentStreamResponse(res, { sessionId, decisions }).run();
-  }
+  // From this point on, the response is an event stream
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
 
-  // Execute normal agent run stream
-  return new RunAgentStreamResponse(res, { text, sessionId, thinking }).run();
+  // One SSE frame: an event line, a data line, and a blank line to end it
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    const result = await runAgentStream(
+      { input: text },
+      { configurable: { sessionId } },
+      thinking,
+      sendEvent
+    );
+    sendEvent('done', result);
+  } catch (error) {
+    console.error('Chat stream error:', error);
+    sendEvent('error', { reply: 'Sorry, something went wrong.' });
+  } finally {
+    res.end();
+  }
 });
 
 module.exports = router;
