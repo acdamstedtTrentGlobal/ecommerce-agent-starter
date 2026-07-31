@@ -42,7 +42,7 @@ const thoughtMiddleware = createMiddleware({
       const justification = await model.invoke([
         ['system', 'You explain AI agent decisions in one short sentence.'],
         ['human', `The user asked: "${lastHuman?.content}". The agent decided to call: ${toolCallText}. In one short sentence, explain why.`]
-      ], { tags: ['justification'] });  // add: lets a streaming caller skip these tokens
+      ]); 
       const text = typeof justification.content === 'string' ? justification.content : '';
       console.log("Custom created justification =", text);
       if (text) thoughts = [text];
@@ -62,12 +62,6 @@ function takeThoughts(sessionId) {
   return t || [];
 }
 
-// Read the thoughts WITHOUT removing them, so runAgentStream can stream
-// them out as they arrive while takeThoughts still drains them at the end
-function peekThoughts(sessionId) {
-  return thoughtStore.get(String(sessionId)) || [];
-}
-
 module.exports = {
-  thoughtMiddleware, takeThoughts, peekThoughts,
+  thoughtMiddleware, takeThoughts, 
 }

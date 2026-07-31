@@ -6,7 +6,7 @@
 
   // Prefer the streaming UI; fall back to the base class if its
   // script was not loaded (e.g. an older branch's chat.ejs)
-  const ChatbotClass = window.StreamingChatbotUI || window.AdminChatbotUI;
+  const ChatbotClass = window.AdminChatbotUI;
 
   try {
     window.adminChatbot = new ChatbotClass('#admin-chat');
