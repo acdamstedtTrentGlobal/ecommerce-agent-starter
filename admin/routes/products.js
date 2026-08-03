@@ -4,18 +4,8 @@ const productServices = require('../services/productServices');
 const documentServices = require('../services/documentServices');
 const multer = require('multer');
 const path = require('path');
-
-// AI-powered product extraction
-const { ChatGoogle } = require('@langchain/google/node');
 const { model } = require('../../gemini');
 const { z } = require('zod');
-
-const modelWithSearch = new ChatGoogle({
-  model: 'gemini-2.5-flash',
-  apiKey: process.env.GEMINI_API_KEY,
-}).bindTools([
-  { googleSearchRetrieval: {} }
-]);
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -165,20 +155,7 @@ router.post('/:id/ask', ensureAdmin, express.json(), async (req, res) => {
 
 // Generate AI summary of online reviews
 router.get('/:id/reviews', ensureAdmin, async (req, res) => {
-  try {
-    const product = await productServices.getProductById(req.params.id);
-
-    const response = await modelWithSearch.invoke(
-      `Search for customer reviews of "${product.name}" by "${product.brand}".
-       Summarize what customers are saying about this product in 3-4 sentences.
-       Focus on common praise, complaints, and overall sentiment.`
-    );
-
-    res.json({ summary: response.content });
-  } catch (error) {
-    console.error('AI reviews error:', error);
-    res.status(500).json({ error: 'Failed to get reviews' });
-  }
+  // TODO
 });
 
 // generate embeddings for this product's reviews
