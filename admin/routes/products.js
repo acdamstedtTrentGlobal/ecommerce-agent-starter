@@ -4,8 +4,6 @@ const productServices = require('../services/productServices');
 const documentServices = require('../services/documentServices');
 const multer = require('multer');
 const path = require('path');
-const { model } = require('../../gemini');
-const { z } = require('zod');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -61,40 +59,7 @@ router.post('/', ensureAdmin, upload.single('pdf'), async (req, res) => {
 
 // Generate product listing from natural language
 router.post('/ai/generate', ensureAdmin, express.json(), async (req, res) => {
-  try {
-    const { message } = req.body;
-
-    // Fetch valid categories and tags from the database
-    const categories = await productServices.getAllCategories();
-    const tags = await productServices.getAllTags();
-
-    // Define the output schema using Zod
-    const productSchema = z.object({
-      name: z.string(),
-      brand: z.string(),
-      price: z.number(),
-      description: z.string(),
-      category_id: z.number().describe(
-        `Must be one of: ${categories.map(c => `${c.id} (${c.name})`).join(', ')}`
-      ),
-      tag_ids: z.array(z.number()).describe(
-        `Must be from: ${tags.map(t => `${t.id} (${t.name})`).join(', ')}`
-      )
-    });
-
-    // Create a structured model that outputs valid product objects
-    const structuredModel = model.withStructuredOutput(productSchema);
-
-    // Generate the product from natural language
-    const response = await structuredModel.invoke(
-      `Generate a product listing from this description: ${message}`
-    );
-
-    res.json(response);
-  } catch (error) {
-    console.error('AI product generation error:', error);
-    res.status(500).json({ error: 'Failed to generate product listing' });
-  }
+  // TODO
 });
 
 // view product detail with reviews
