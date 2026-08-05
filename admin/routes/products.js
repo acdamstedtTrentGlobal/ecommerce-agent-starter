@@ -4,21 +4,11 @@ const productServices = require('../services/productServices');
 const documentServices = require('../services/documentServices');
 const multer = require('multer');
 const path = require('path');
-
-// AI-powered product extraction
-const { ChatGoogle } = require('@langchain/google/node');
-const { model } = require('../../gemini');
+const { model, modelWithSearch } = require('../../gemini');
 const { z } = require('zod');
 
 const { extractTextFromPDF, chunkText, generateEmbedding } = require("../services/embeddingServices");
 const getPoleEmbeddings = require('../modules/getPoleEmbeddings');
-
-const modelWithSearch = new ChatGoogle({
-  model: 'gemini-2.5-flash',
-  apiKey: process.env.GEMINI_API_KEY,
-}).bindTools([
-  { googleSearchRetrieval: {} }
-]);
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {

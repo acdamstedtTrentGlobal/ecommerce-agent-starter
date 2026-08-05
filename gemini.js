@@ -33,6 +33,13 @@ const model = new ChatGoogle({
   includeThoughts: true
 });
 
+const modelWithSearch = new ChatGoogle({
+  model: 'gemini-2.5-flash',
+  apiKey: process.env.GEMINI_API_KEY,
+}).bindTools([
+  { googleSearchRetrieval: {} }
+]);
+
 const tools = [
   getCompletedOrdersTool,
   getCompletedOrdersForProductTool,
@@ -80,4 +87,4 @@ const thinkingAgent = createAgent({
 });
 
 
-module.exports = { model, modelWithTools, agent, thinkingAgent };
+module.exports = { model, modelWithSearch, modelWithTools, agent, thinkingAgent };
