@@ -4,10 +4,7 @@ const productServices = require('../services/productServices');
 const documentServices = require('../services/documentServices');
 const multer = require('multer');
 const path = require('path');
-
-// AI-powered product extraction
-const { ChatGoogle } = require('@langchain/google/node');
-const { model } = require('../../gemini');
+const { model, modelWithSearch } = require('../../gemini');
 const { z } = require('zod');
 
 const { extractTextFromPDF, chunkText, generateEmbedding } = require("../services/embeddingServices");
