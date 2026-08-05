@@ -10,13 +10,6 @@ const { z } = require('zod');
 const { extractTextFromPDF, chunkText, generateEmbedding } = require("../services/embeddingServices");
 const getPoleEmbeddings = require('../modules/getPoleEmbeddings');
 
-const modelWithSearch = new ChatGoogle({
-  model: 'gemini-2.5-flash',
-  apiKey: process.env.GEMINI_API_KEY,
-}).bindTools([
-  { googleSearchRetrieval: {} }
-]);
-
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(process.cwd(), 'uploads'));
