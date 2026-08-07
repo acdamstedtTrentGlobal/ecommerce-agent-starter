@@ -41,33 +41,35 @@ function messageText(msg) {
 
 const injectionDetectionMiddleware = createMiddleware({
   name: 'injectionDetectionMiddleware',
-  beforeModel: (state) => {
-    const messages = state.messages || [];
+  beforeModel: {
+    canJumpTo: ['end'],
+    hook: (state) => {
+      const messages = state.messages || [];
 
-    // Find the cut-off: everything after the last AI message is "new"
-    let lastAiIndex = -1;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i]._getType && messages[i]._getType() === 'ai') {
-        lastAiIndex = i;
-        break;
+      let lastAiIndex = -1;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i]._getType && messages[i]._getType() === 'ai') {
+          lastAiIndex = i;
+          break;
+        }
       }
-    }
-    const newMessages = messages.slice(lastAiIndex + 1);
+      const newMessages = messages.slice(lastAiIndex + 1);
 
-    for (const msg of newMessages) {
-      const type = msg._getType ? msg._getType() : null;
-      if (type !== 'human' && type !== 'tool') continue;
+      for (const msg of newMessages) {
+        const type = msg._getType ? msg._getType() : null;
+        if (type !== 'human' && type !== 'tool') continue;
 
-      const text = messageText(msg);
-      if (looksLikeInjection(text)) {
-        console.warn(
-          `[SECURITY] Injection pattern detected in${type} message:`,
-          text.substring(0, 200)
-        );
-        return {
-          messages: [new AIMessage(REFUSAL_TEXT)],
-          jumpTo: 'end',
-        };
+        const text = messageText(msg);
+        if (looksLikeInjection(text)) {
+          console.warn(
+            `[SECURITY] Injection pattern detected in ${type} message:`,
+            text.substring(0, 200)
+          );
+          return {
+            messages: [new AIMessage(REFUSAL_TEXT)],
+            jumpTo: 'end',
+          };
+        }
       }
     }
   }
@@ -88,7 +90,7 @@ const SENSITIVE_TOOLS = new Set([
 ]);
 
 const TAINT_BLOCK_TEXT =
-  'Blocked: this action appears to have been triggered by text inside ' +
+  '🚫 Blocked: this action appears to have been triggered by text inside ' +
   'product documentation or reviews, not by a direct instruction from the ' +
   'admin. If you really want this action, tell me directly (e.g. ' +
   '"create a restock order of 500 units for product 3").';
@@ -125,7 +127,7 @@ const taintMiddleware = createMiddleware({
 
     if (SENSITIVE_TOOLS.has(toolName) && taintedSessions.has(sessionId)) {
       console.warn(
-        `🚫 [SECURITY] Blocked${toolName}: session${sessionId} is tainted by untrusted content`
+        `🚫 [SECURITY] Blocked ${toolName}: session ${sessionId} is tainted by untrusted content`
       );
       return new ToolMessage({
         content: TAINT_BLOCK_TEXT,
@@ -140,6 +142,6 @@ const taintMiddleware = createMiddleware({
 
 module.exports = {
   injectionDetectionMiddleware,
-  looksLikeInjection,
   taintMiddleware,
+  looksLikeInjection,
 };

@@ -114,9 +114,15 @@ async function executeAgentStream({ activeAgent, streamInput, runConfig, session
     throw error;
   }
 
-  // check if there are any interruption to handle
+  // check if the middleware short-circuited with a refusal
   const threadId = runConfig.configurable.thread_id;
   const state = await activeAgent.getState({ configurable: { thread_id: threadId } });
+  const lastMsg = state.values?.messages?.[state.values.messages.length - 1];
+  if (lastMsg && lastMsg._getType() === 'ai' && reply === '') {
+    reply = extractReplyText(lastMsg.content);
+  }
+
+  // check if there are any interruption to handle
   const interrupts = (state.tasks || []).flatMap(task => task.interrupts || []);
   if (interrupts.length > 0) {
     setPendingApproval(sessionId, { threadId, thinking, input: userInput });
