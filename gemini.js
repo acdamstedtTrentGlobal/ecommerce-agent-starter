@@ -106,7 +106,7 @@ const middleware = [
 const agent = createAgent({
   model,
   tools,
-  prompt: prompt,
+  systemPrompt: prompt,
   middleware,
   checkpointer
 });
@@ -114,7 +114,7 @@ const agent = createAgent({
 const thinkingAgent = createAgent({
   model,
   tools,
-  prompt: prompt,
+  systemPrompt: prompt,
   middleware: [...middleware, thoughtMiddleware],
   checkpointer
 });
