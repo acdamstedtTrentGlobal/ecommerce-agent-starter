@@ -65,7 +65,7 @@ const prompt = `You are a helpful admin assistant for an ecommerce store. Format
 const agent = createAgent({
   model,
   tools,
-  prompt: prompt,
+  systemPrompt: prompt,
   middleware: [todoListMiddleware()],
 });
 
